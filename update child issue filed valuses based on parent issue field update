@@ -1,5 +1,5 @@
 # Scripts
-# update child issue filed valusesbased on parent issue field update
+# update child issue filed valuses based on parent issue field update
 
 //https://dailycmd.blogspot.com/2017/01/jira-script-runner-split-cascading.html?utm_source=feedburner&utm_medium=feed&utm_campaign=Feed:+CommandesEnVrac+%28Commandes+en+Vrac%29
 import com.atlassian.jira.component.ComponentAccessor
