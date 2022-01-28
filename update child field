@@ -1,0 +1,54 @@
+//https://dailycmd.blogspot.com/2017/01/jira-script-runner-split-cascading.html?utm_source=feedburner&utm_medium=feed&utm_campaign=Feed:+CommandesEnVrac+%28Commandes+en+Vrac%29
+// The Below script is a scriptrunner listener which will update “org themes” fields for all the Execution Plan issues Under an Epic which is Updated
+
+
+import com.atlassian.jira.component.ComponentAccessor
+import com.atlassian.jira.issue.Issue
+import com.atlassian.jira.event.issue.IssueEvent
+import com.atlassian.jira.event.type.EventDispatchOption
+import com.atlassian.jira.jql.parser.JqlQueryParser
+import com.atlassian.jira.web.bean.PagerFilter
+import com.atlassian.jira.bc.issue.search.SearchService
+import com.atlassian.jira.issue.fields.CustomField
+
+def searchService = ComponentAccessor.getComponent(SearchService.class)
+def jqlQueryParser = ComponentAccessor.getComponent(JqlQueryParser)
+def user = ComponentAccessor.getJiraAuthenticationContext().getUser()
+def customFieldManager = ComponentAccessor.getCustomFieldManager()
+def issueManager = ComponentAccessor.getIssueManager()
+def fieldName = "Org Themes"
+def event = event as IssueEvent
+Issue issue = event.issue as Issue
+log.warn("The Epic : "+issue)
+CustomField cfCascading = customFieldManager.getCustomFieldObjectByName(fieldName)
+
+if(issue.issueType.name == 'Epic'){
+    log.warn("It's an Epic")
+    def jql = " \"Epic Link\"  ="+issue.getKey()
+    log.warn(jql)
+    def query = jqlQueryParser.parseQuery(jql)
+    def results = searchService.search(user, query, PagerFilter.getUnlimitedFilter())
+
+    log.warn("Total issues: ${results.total}")
+	log.warn(results.getResults().toString())
+    
+    List issuesInEpic = results.getResults()
+  	for(issueInEpic in issuesInEpic){
+        
+        def type = issueInEpic.getIssueType().getName()
+        if(type=='Execution Plan'){
+            Map cfVal = issue.getCustomFieldValue(cfCascading) as Map
+        log.warn(cfVal)
+   		if (cfVal) {
+            def issueToUpdate = issueManager.getIssueObject(issueInEpic.id)
+            log.warn("issueToUpdate : "+issueToUpdate)
+            issueToUpdate.setCustomFieldValue(cfCascading,cfVal)
+            issueManager.updateIssue(event.getUser(), issueToUpdate, EventDispatchOption.DO_NOT_DISPATCH, false)
+    		log.warn("Issue got Updated")
+			}	
+        }
+    }
+}else{
+    log.warn("It's Not an Epic")
+    return
+}
